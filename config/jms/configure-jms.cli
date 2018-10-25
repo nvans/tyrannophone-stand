@@ -1,0 +1,15 @@
+# Batch script to add the JMS configuration to the JBoss EAP server
+
+# Use $ {jbossHomeName}/bin/jboss-cli.sh --connect --file=configure-jms.cli
+
+# Start batching commands
+batch
+
+# Configure the JMS test queue
+jms-queue add --queue-address=tyrannophoneQueue --entries=queue/tyrannophone,java:jboss/exported/jms/queue/tyrannophone
+
+# Run the batch commands
+run-batch
+
+# Reload the server configuration
+reload

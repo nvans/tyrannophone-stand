@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+<h:head>
+
+    <script type="text/javascript" src="webjars/jquery/3.3.1-1/jquery.min.js"></script>
+    <script type="text/javascript" src="webjars/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="webjars/bootstrap/4.1.3/css/bootstrap.min.css"/>
+
+</h:head>
+<h:body>
+    <f:websocket channel="events" onmessage="eventListener"/>
+
+    <h1 class="text-center">Tyrannophone</h1>
+
+    <h:panelGroup rendered="#{home.plans == null}">
+        <div id="unavailableContainer" class="jumbotron" style="visibility: visible">
+            <h1 class="display-3">Service temporary unavailable!</h1>
+        </div>
+    </h:panelGroup>
+
+    <h:panelGroup id="plans">
+        <h:form id="subform">
+            <div class="container-fluid">
+                <div class="row justify-content-center">
+                    <ui:repeat value="#{home.plans}" var="plan">
+                        <div class="card" style="margin: 3%; width: 400px; background: azure ">
+                            <img class="card-img" src="resources/images/plan-bg.jpg" alt=""/>
+                            <div class="card-header card-img-overlay">
+                                <h2 class="card-title text-light text-center">#{plan.name}</h2>
+                            </div>
+                            <h5 class="text-dark font-italic text-left mx-4">#{plan.description}</h5>
+                            <div class="card-body">
+                                <h4 class="text-center">${plan.monthlyPrice}$ / per month</h4><br/>
+                                <h:outputLabel value="Connected options" styleClass="font-weight-bold"/>
+                                <table class="table">
+                                    <ui:repeat value="${plan.options}" var="option">
+                                        <h:panelGroup layout="block" rendered="#{option.connected}">
+                                            <tr class="d-sm-table-row">
+                                                <td><h:outputLabel value="#{option.name}"/></td>
+                                                <td>#{option.connected ? "free" : option.price}</td>
+                                            </tr>
+                                        </h:panelGroup>
+                                    </ui:repeat>
+                                </table>
+                                <h:outputLabel value="Available options" styleClass="font-weight-bold"/>
+                                <table class="table">
+                                    <ui:repeat value="${plan.options}" var="option">
+                                        <h:panelGroup layout="block" rendered="#{!option.connected}">
+                                            <tr class="d-sm-table-row">
+                                                <td>#{option.name}</td>
+                                                <td>#{option.price == 0 ? "free" : option.price}</td>
+                                            </tr>
+                                        </h:panelGroup>
+                                    </ui:repeat>
+                                </table>
+                            </div>
+                            <a href="http://localhost:8080">View</a>
+                        </div>
+                    </ui:repeat>
+                </div>
+            </div>
+
+
+            <h:commandButton action="click" id="updateBtn" style="display:none">
+                <f:ajax event="click" render="@this plans"/>
+            </h:commandButton>
+        </h:form>
+    </h:panelGroup>
+
+    <script type="text/javascript">
+        function eventListener(message, channel, event) {
+
+            console.log(message.toString());
+
+            if (message.toString() === 'update') {
+                console.log('updating');
+                document.getElementById("unavailableContainer").hidden = true;
+                document.getElementById("subform:updateBtn").click();
+            }
+
+        }
+    </script>
+
+</h:body>
+</html>
+
