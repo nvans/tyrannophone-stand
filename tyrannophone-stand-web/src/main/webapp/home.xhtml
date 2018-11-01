@@ -17,11 +17,11 @@
 
     <h1 class="text-center">Tyrannophone</h1>
 
-    <h:panelGroup rendered="#{home.plans == null}">
-        <div id="unavailableContainer" class="jumbotron" style="visibility: visible">
-            <h1 class="display-3">Service temporary unavailable!</h1>
-        </div>
-    </h:panelGroup>
+    <!--<h:panelGroup rendered="#{home.plans == null}">-->
+        <!--<div id="unavailableContainer" class="jumbotron">-->
+            <!--<h1 class="display-3">Service temporary unavailable!</h1>-->
+        <!--</div>-->
+    <!--</h:panelGroup>-->
 
     <h:panelGroup id="plans">
         <h:form id="subform">
@@ -59,7 +59,7 @@
                                     </ui:repeat>
                                 </table>
                             </div>
-                            <a href="http://localhost:8080">View</a>
+                            <!--<a href="http://localhost:8080">View</a>-->
                         </div>
                     </ui:repeat>
                 </div>
@@ -74,15 +74,10 @@
 
     <script type="text/javascript">
         function eventListener(message, channel, event) {
-
             console.log(message.toString());
 
-            if (message.toString() === 'update') {
                 console.log('updating');
-                document.getElementById("unavailableContainer").hidden = true;
                 document.getElementById("subform:updateBtn").click();
-            }
-
         }
     </script>
 

@@ -19,6 +19,7 @@ import java.util.logging.Logger;
 public class ModelUpdaterBean {
 
     private static final Logger log = Logger.getLogger(ModelUpdaterBean.class.getName());
+//    private static final String PLANS_RESOURCE_URL = "http://192.168.99.100:8080/api/plans";
     private static final String PLANS_RESOURCE_URL = "http://localhost:8080/api/plans";
 
     @Inject
@@ -55,7 +56,7 @@ public class ModelUpdaterBean {
 
         restClient.close();
 
-        log.info("Event fired");
+        log.info("Event '" + eventMessage + "' fired");
         event.fire(eventMessage);
     }
 }

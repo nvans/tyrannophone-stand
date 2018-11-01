@@ -1,19 +1,18 @@
 package com.nvans.tyrannophone.stand.ejb;
 
-import org.apache.activemq.artemis.api.core.ActiveMQDisconnectedException;
+import org.apache.activemq.artemis.api.core.TransportConfiguration;
+import org.apache.activemq.artemis.api.jms.ActiveMQJMSClient;
+import org.apache.activemq.artemis.api.jms.JMSFactoryType;
+import org.apache.activemq.artemis.core.remoting.impl.netty.NettyConnectorFactory;
+import org.apache.activemq.artemis.core.remoting.impl.netty.TransportConstants;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
 import javax.ejb.*;
-
 import javax.jms.*;
-
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import javax.naming.NamingException;
-
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 @Startup
@@ -22,12 +21,10 @@ public class JMSInitBean {
 
     private static final Logger log = Logger.getLogger(JMSInitBean.class.getName());
 
-    private Context jndiContext;
     private Connection jmsConnection;
     private Session jmsSession;
     private MessageConsumer messageConsumer;
     private ConnectionFactory jmsConnectionFactory;
-    private Queue messageQueue;
 
     private boolean isConnected = false;
 
@@ -42,29 +39,20 @@ public class JMSInitBean {
 
         log.info("JMS Initialization");
 
-        Properties props = new Properties();
-        props.put(Context.INITIAL_CONTEXT_FACTORY, "org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory");
-        props.put(Context.PROVIDER_URL, "tcp://localhost:61617");
-        props.put("ConnectionFactory", "failover:tcp://localhost:61617");
-        props.put("queue.queue/UpdateQueue", "UpdateQueue");
+        log.info("JMS properties initialization");
+        Map<String, Object> props = new HashMap<>();
+        props.put(TransportConstants.HOST_PROP_NAME, "192.168.99.100");
+        props.put(TransportConstants.PORT_PROP_NAME, 61616);
 
-        try {
-            // Look-up remote resources
-            jndiContext = new InitialContext(props);
-            jmsConnectionFactory = (ConnectionFactory) jndiContext.lookup("ConnectionFactory");
-            messageQueue = (Queue) jndiContext.lookup("queue/UpdateQueue");
+        TransportConfiguration transportConfiguration =
+                new TransportConfiguration(NettyConnectorFactory.class.getName(), props);
 
-            log.info("Attempt to connect JMS server");
-            startJmsConnection(jmsConnectionFactory, messageQueue);
+        jmsConnectionFactory =
+                ActiveMQJMSClient.createConnectionFactoryWithoutHA(JMSFactoryType.CF, transportConfiguration)
+                        .setUser("tyrannophone")
+                        .setPassword("tyrannophone");
 
-
-        } catch (NamingException e) {
-
-            log.severe("Can't establish JMS connection. " + e.getMessage());
-
-            destroy();
-        }
-
+        startJmsConnection(jmsConnectionFactory);
     }
 
 
@@ -73,14 +61,12 @@ public class JMSInitBean {
 
         if (isConnected) return;
 
-        startJmsConnection(jmsConnectionFactory, messageQueue);
+        startJmsConnection(jmsConnectionFactory);
 
     }
 
 
-    public void startJmsConnection(ConnectionFactory jmsConnectionFactory, Queue messageQueue) {
-
-        log.info("Attempt to connect JMS server");
+    public void startJmsConnection(ConnectionFactory jmsConnectionFactory) {
 
         try {
             // Connection initialization
@@ -99,7 +85,7 @@ public class JMSInitBean {
             });
 
             jmsSession = jmsConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
+            Queue messageQueue = jmsSession.createQueue("UpdateQueue");
             // Create async consumer
             messageConsumer = jmsSession.createConsumer(messageQueue);
             messageConsumer.setMessageListener(message -> {
@@ -120,7 +106,8 @@ public class JMSInitBean {
             modelUpdaterBean.updateModel();
 
         } catch (JMSException e) {
-            log.info("Can't establish JMS connection. Next attempt in 10 seconds.");
+            log.info(this + " Can't establish JMS connection. Next attempt in 10 seconds. " + e.getMessage());
+
         }
     }
 
@@ -131,15 +118,6 @@ public class JMSInitBean {
         closeResource(messageConsumer);
         closeResource(jmsSession);
         closeResource(jmsConnection);
-
-        if (jndiContext != null) {
-            try {
-                jndiContext.close();
-            } catch (NamingException e) {
-                log.warning(e.getMessage());
-            }
-        }
-
     }
 
     private void closeResource(AutoCloseable resource) {
